@@ -88,7 +88,7 @@ var client = new Twitter({
   access_token_secret: accessTokenSecret,
 });
 
-app.post("/getTweets", (req, res) => {
+app.get("/getTweets", (req, res) => {
   var params = { screen_name: req.body.username };
   client.get(
     "statuses/user_timeline",
@@ -97,7 +97,7 @@ app.post("/getTweets", (req, res) => {
       if (!error) {
         res.json(tweets);
       } else {
-        res.status(500);
+        res.status(503, { error: error });
       }
     }
   );
@@ -153,6 +153,38 @@ app.post("/login", (req, res) => {
           res.send("Username incorrect");
         });
     }
+  }
+});
+
+app.post("/addHistory", (req, res) => {
+  if (req) {
+    userHistoryModel
+      .findOne({ username: req.body.username })
+      .then((doc) => {
+        var tempArr = doc.history;
+        tempArr.push(req.body.history);
+        console.log(tempArr);
+        userHistoryModel.updateOne(
+          { username: req.body.username },
+          { history: tempArr },
+          (err, doc) => {
+            console.log(doc);
+          }
+        );
+        res.send("History Updated");
+      })
+      .catch((err) => {
+        var histArr = [];
+        histArr.push(req.body.history);
+        var newHistory = new userHistoryModel({
+          username: req.body.username,
+          history: histArr,
+        });
+        newHistory.save().then((doc) => {
+          console.log(doc);
+          res.send("New History Created");
+        });
+      });
   }
 });
 
