@@ -88,7 +88,7 @@ var client = new Twitter({
   access_token_secret: accessTokenSecret,
 });
 
-app.get("/getTweets", (req, res) => {
+app.post("/getTweets", (req, res) => {
   var params = { screen_name: req.body.username };
   client.get(
     "statuses/user_timeline",
@@ -184,6 +184,20 @@ app.post("/addHistory", (req, res) => {
           console.log(doc);
           res.send("New History Created");
         });
+      });
+  }
+});
+
+app.post("/getHistory", (req, res) => {
+  if (req) {
+    console.log(req.body);
+    userHistoryModel
+      .findOne({ username: req.body.username })
+      .then((doc) => {
+        res.send(doc.history);
+      })
+      .catch((err) => {
+        res.send(err);
       });
   }
 });
