@@ -80,6 +80,25 @@ describe('login', () => {
 
 
 describe('add History',() => {
+    it('updating the history', () => {
+        request(app)
+        .post('/addHistory')
+        .send({})
+        .expect("History Updated")
+        .then((res) => {
+            expect(res.headers.location).to.be.eql('/addHistory');
+        });
+    });
+
+    it('creation of new history', () => {
+        request(app)
+        .post('/addHistory')
+        .send({})
+        .expect("New History Created")
+        .then((res) => {
+            expect(res.headers.location).to.be.eql('/addHistory');
+        });
+    });
 
 });
 
@@ -91,7 +110,7 @@ describe('get History', () =>
         .send({})
         .expect("Successful")
         .then((res) => {
-            expect(res.headers.location).to.be.eql('');
+            expect(res.headers.location).to.be.eql('/getHistory');
         });
     });
     it('get an error', () =>{
@@ -100,7 +119,7 @@ describe('get History', () =>
         .send({})
         .expect("Failure")
         .then((res) => {
-            expect(res.headers.location).to.be.eql('');
+            expect(res.headers.location).to.be.eql('/getHistory');
         });
     });
 });
