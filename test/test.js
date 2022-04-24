@@ -57,5 +57,22 @@ describe('add History',() => {
 
 describe('get History', () =>
 {
-    
+    it('get a response', () => {
+        request(app)
+        .post('/getHistory')
+        .send({})
+        .expect("Successful")
+        .then((res) => {
+            expect(res.headers.location).to.be.eql('');
+        });
+    });
+    it('get an error', () =>{
+        request(app)
+        .post('/getHistory')
+        .send({})
+        .expect("Failure")
+        .then((res) => {
+            expect(res.headers.location).to.be.eql('');
+        });
+    });
 });
