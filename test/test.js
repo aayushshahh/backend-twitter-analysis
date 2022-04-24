@@ -49,7 +49,35 @@ describe('POST sign-up',() => {
 
 describe('login', () => {
 
+    it('Logging successful', () => {
+        request(app)
+        .post('/login')
+        .send({})
+        .expect("Logging Successful")
+        .then((res) => {
+            expect(res.headers.location).to.be.eql('/login');
+        });
 });
+    it('Password Incorrect', () => {
+        request(app)
+        .post('/login')
+        .send({})
+        .expect("Password Incorrect")
+        .then((res) => {
+            expect(res.headers.location).to.be.eql('/login');
+        });
+});
+    it('Username incorrect', () => {
+        request(app)
+        .post('/login')
+        .send({})
+        .expect("Username incorrect")
+        .then((res) => {
+            expect(res.headers.location).to.be.eql('/login');
+        });
+});
+});
+
 
 describe('add History',() => {
 
