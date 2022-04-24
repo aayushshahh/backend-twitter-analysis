@@ -2,9 +2,14 @@ const express = require('express');
 const chai = require('chai');
 const request = require('supertest');
 
+const app = express();
+
 describe('POST get tweets',() => {
     it('should get tweets and expect a response', () => {
-        
+        request(app)
+        .post('/getTweets')
+        .send('@jack')
+        .expect(400)
     });
     it('should throw an error for invalid username', () =>{
 
@@ -43,7 +48,7 @@ describe('POST sign-up',() => {
 });
 
 describe('login', () => {
-    
+
 });
 
 describe('add History',() => {
