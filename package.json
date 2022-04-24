@@ -15,8 +15,10 @@
     "email-validate": "^1.0.0",
     "email-validator": "^2.0.4",
     "express": "^4.17.3",
+    "express-prom-bundle": "^6.4.1",
     "mongodb": "^4.5.0",
     "mongoose": "^6.3.0",
+    "prom-client": "^14.0.1",
     "twitter": "^1.7.1"
   }
 }

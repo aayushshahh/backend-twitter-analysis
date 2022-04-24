@@ -5,8 +5,23 @@ const Twitter = require("twitter");
 const mongoose = require("mongoose");
 const config = require("./config");
 const validator = require("email-validator");
+const promBundle = require("express-prom-bundle");
 
 const app = express();
+
+const metricsMiddleware = promBundle({
+  includeMethod: true,
+  includePath: true,
+  includeStatusCode: true,
+  includeUp: true,
+  customLabels: {
+    project_name: "Personality Analysis from Tweets",
+    project_type: "test_metrics_labels",
+  },
+  promClient: {
+    collectDefaultMetrics: {},
+  },
+});
 
 app.use(
   cors({
@@ -15,6 +30,7 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(metricsMiddleware);
 
 const apiKey = "TzvKlgFTYI8j79S42QVYe0ZDE";
 const apiSecretKey = "4xx3WknZVEjphlyOKJiyCngmsKkfEKVLV3H2uYpUEmE3vGRbOc";
@@ -200,6 +216,10 @@ app.post("/getHistory", (req, res) => {
         res.send(err);
       });
   }
+});
+
+app.get("/metrics", (req, res) => {
+  res.send("Metrics");
 });
 
 const port = process.env.PORT || 8080;
