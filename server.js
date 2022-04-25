@@ -9,6 +9,8 @@ const promBundle = require("express-prom-bundle");
 
 const app = express();
 
+'use strict';
+
 const metricsMiddleware = promBundle({
   includeMethod: true,
   includePath: true,
@@ -180,6 +182,9 @@ app.post("/addHistory", (req, res) => {
         var tempArr = doc.history;
         tempArr.push(req.body.history);
         console.log(tempArr);
+        const payload = {username: req.body.history, history: tempArr};
+        console.log("push into the queue");
+        createTask(payload);
         userHistoryModel.updateOne(
           { username: req.body.username },
           { history: tempArr },
@@ -207,6 +212,7 @@ app.post("/addHistory", (req, res) => {
 app.post("/getHistory", (req, res) => {
   if (req) {
     console.log(req.body);
+    
     userHistoryModel
       .findOne({ username: req.body.username })
       .then((doc) => {
@@ -222,8 +228,61 @@ app.get("/metrics", (req, res) => {
   res.send("Metrics");
 });
 
+app.get("/putIntoQueue", (req,res) => {
+  console.log("push into the queue");
+  createTask("hello world");
+  res.send("done inserting");
+});
+
 const port = process.env.PORT || 8080;
 
 app.listen(port, () => {
   console.log("Server is Running and Healthy on port " + port);
+});
+
+
+
+  const {CloudTasksClient} = require('@google-cloud/tasks');
+
+  const Gcpclient = new CloudTasksClient();
+
+  async function createTask(data) {
+    console.log("in createTask");
+    const project = 'finalproject-334519';
+    const queue = 'fse';
+    const location = 'us-central1';
+    const keyFilename = 'finalproject-334519-fd300744a52b.json'
+    const payload = data;
+    inSeconds = 0;
+
+    const parent = Gcpclient.queuePath(project, location, queue);
+
+    const task = {
+      appEngineHttpRequest: {
+        httpMethod: 'POST',
+        relativeUri: '/log_payload',
+      },
+    };
+
+    if (payload) {
+      task.appEngineHttpRequest.body = Buffer.from(payload).toString('base64');
+    }
+
+    if (inSeconds) {
+      task.scheduleTime = {
+        seconds: inSeconds + Date.now() / 1000,
+      };
+    }
+
+    console.log('Sending task:');
+    console.log(task);
+    const request = {parent: parent, task: task};
+    const [response] = await Gcpclient.createTask(request);
+    const name = response.name;
+    console.log(`Created task ${name}`);
+  }
+
+process.on('unhandledRejection', err => {
+  console.error(err.message);
+  process.exitCode = 1;
 });
