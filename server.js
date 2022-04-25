@@ -144,29 +144,53 @@ app.post("/login", (req, res) => {
       userModel
         .findOne({ email: req.body.userCred })
         .then((doc) => {
-          console.log(doc.password);
+          console.log(doc);
           if (doc.password === req.body.userPassword) {
-            res.send("Logging Successful");
+            var response = {
+              message: "Logging Successful",
+              data: doc,
+            };
+            res.send(response);
           } else {
-            res.send("Password Incorrect");
+            var response = {
+              message: "Password Incorrect",
+              data: {},
+            };
+            res.send(response);
           }
         })
         .catch((err) => {
-          res.send("Email incorrect");
+          var response = {
+            message: "Email Incorrect",
+            data: {},
+          };
+          res.send(response);
         });
     } else {
       userModel
         .findOne({ username: req.body.userCred })
         .then((doc) => {
-          console.log(doc.password);
           if (doc.password === req.body.userPassword) {
-            res.send("Logging Successful");
+            console.log(doc);
+            var response = {
+              message: "Logging Successful",
+              data: doc,
+            };
+            res.send(response);
           } else {
-            res.send("Password Incorrect");
+            var response = {
+              message: "Password Incorrect",
+              data: {},
+            };
+            res.send(response);
           }
         })
         .catch((err) => {
-          res.send("Username incorrect");
+          var response = {
+            message: "Username Incorrect",
+            data: {},
+          };
+          res.send(response);
         });
     }
   }
@@ -210,10 +234,17 @@ app.post("/getHistory", (req, res) => {
     userHistoryModel
       .findOne({ username: req.body.username })
       .then((doc) => {
-        res.send(doc.history);
+        console.log("It is in then yaar");
+        console.log(doc);
+        if (doc !== null) {
+          res.send(doc.history);
+        } else {
+          res.send([{ twitUsername: "No History", personality: "" }]);
+        }
       })
       .catch((err) => {
-        res.send(err);
+        console.log("It is error madafaka");
+        res.send([{ twitUsername: "No History", personality: "" }]);
       });
   }
 });
