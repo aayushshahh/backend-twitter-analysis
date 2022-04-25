@@ -6,7 +6,7 @@ const app = express();
 
 describe("POST get tweets", () => {
   it("should get tweets and expect a response", () => {
-    request(app).post("/getTweets").send("@jack").expect(400);
+    request(app).post("/getTweets").send("@jack").expect(200);
   });
   it("should throw an error for invalid username", () => {});
 });
