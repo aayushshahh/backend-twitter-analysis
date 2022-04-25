@@ -184,7 +184,8 @@ app.post("/addHistory", (req, res) => {
         console.log(tempArr);
         const payload = {username: req.body.history, history: tempArr};
         console.log("push into the queue");
-        createTask(payload);
+        const name = createTask(payload);
+        purgueQueue(name);
         userHistoryModel.updateOne(
           { username: req.body.username },
           { history: tempArr },
@@ -229,9 +230,10 @@ app.get("/metrics", (req, res) => {
 });
 
 app.get("/putIntoQueue", (req,res) => {
-  console.log("push into the queue");
-  createTask("hello world");
-  res.send("done inserting");
+  console.log("pull from the queue");
+  purgueQueue("projects/finalproject-334519/locations/us-central1/queues/fse/tasks/56068740278537775551");
+  //createTask("Hello ra");
+  res.send("done dequeuing");
 });
 
 const port = process.env.PORT || 8080;
@@ -242,47 +244,72 @@ app.listen(port, () => {
 
 
 
-  const {CloudTasksClient} = require('@google-cloud/tasks');
+const {CloudTasksClient} = require('@google-cloud/tasks');
 
-  const Gcpclient = new CloudTasksClient();
+const Gcpclient = new CloudTasksClient();
 
-  async function createTask(data) {
-    console.log("in createTask");
-    const project = 'finalproject-334519';
-    const queue = 'fse';
-    const location = 'us-central1';
-    const keyFilename = 'finalproject-334519-fd300744a52b.json'
-    const payload = data;
-    inSeconds = 0;
+async function createTask(data) {
+  console.log("in createTask");
+  const project = 'finalproject-334519';
+  const queue = 'fse';
+  const location = 'us-central1';
+  const keyFilename = 'finalproject-334519-fd300744a52b.json'
+  const payload = data;
+  inSeconds = 0;
 
-    const parent = Gcpclient.queuePath(project, location, queue);
+  const parent = Gcpclient.queuePath(project, location, queue);
 
-    const task = {
-      appEngineHttpRequest: {
-        httpMethod: 'POST',
-        relativeUri: '/log_payload',
-      },
-    };
+  const task = {
+    appEngineHttpRequest: {
+      httpMethod: 'POST',
+      relativeUri: '/log_payload',
+    },
+  };
 
-    if (payload) {
-      task.appEngineHttpRequest.body = Buffer.from(payload).toString('base64');
-    }
-
-    if (inSeconds) {
-      task.scheduleTime = {
-        seconds: inSeconds + Date.now() / 1000,
-      };
-    }
-
-    console.log('Sending task:');
-    console.log(task);
-    const request = {parent: parent, task: task};
-    const [response] = await Gcpclient.createTask(request);
-    const name = response.name;
-    console.log(`Created task ${name}`);
+  if (payload) {
+    task.appEngineHttpRequest.body = Buffer.from(payload).toString('base64');
   }
 
-process.on('unhandledRejection', err => {
-  console.error(err.message);
-  process.exitCode = 1;
-});
+  if (inSeconds) {
+    task.scheduleTime = {
+      seconds: inSeconds + Date.now() / 1000,
+    };
+  }
+
+  console.log('Sending task:');
+  console.log(task);
+  const request = {parent: parent, task: task};
+  const [response] = await Gcpclient.createTask(request);
+  const name = response.name;
+  console.log(`Created task ${name}`);
+  return name;
+}
+
+async function purgueQueue(queue_name){
+  const project = "finalproject-334519";
+  const region = "us-central1"
+  const queue = "fse"
+  const name = queue_name
+
+  const request = {
+    name,
+  };
+  const response = await Gcpclient.getTask(request);
+  console.log(response);
+}
+
+// async function listQueues() {
+//   const parent = Gcpclient.locationPath(project, location);
+
+//   // list all fo the queues
+//   const [queues] = await Gcpclient.listQueues({parent});
+
+//   if (queues.length > 0) {
+//     console.log('Queues:');
+//     queues.forEach(queue => {
+//       console.log(`  ${queue.name}`);
+//     });
+//   } else {
+//     console.log('No queues found!');
+//   }
+// }
