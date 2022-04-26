@@ -6,6 +6,8 @@ const mongoose = require("mongoose");
 const config = require("./config");
 const validator = require("email-validator");
 const promBundle = require("express-prom-bundle");
+const amqplib = require('amqplib');
+var amqp_url = 'amqps://uuyyktdj:SMNgxmbLqcxiE2owMbWoykgtZ8t9a9af@albatross.rmq.cloudamqp.com/uuyyktdj';
 
 const app = express();
 
@@ -184,8 +186,7 @@ app.post("/addHistory", (req, res) => {
         console.log(tempArr);
         const payload = {username: req.body.history, history: tempArr};
         console.log("push into the queue");
-        const name = createTask(payload);
-        purgueQueue(name);
+        //produce(payload);
         userHistoryModel.updateOne(
           { username: req.body.username },
           { history: tempArr },
@@ -229,12 +230,47 @@ app.get("/metrics", (req, res) => {
   res.send("Metrics");
 });
 
+
 app.get("/putIntoQueue", (req,res) => {
   console.log("pull from the queue");
-  purgueQueue("projects/finalproject-334519/locations/us-central1/queues/fse/tasks/56068740278537775551");
+  produce("Hello hi bye bye");
+  do_consume();
   //createTask("Hello ra");
-  res.send("done dequeuing");
+  res.send("done consuming");
 });
+
+async function produce(message){
+  console.log("Publishing");
+  var conn = await amqplib.connect(amqp_url, "heartbeat=60");
+  var ch = await conn.createChannel()
+  var exch = 'test_exchange';
+  var q = 'test_queue';
+  var rkey = 'test_route';
+  var msg = message;
+  await ch.assertExchange(exch, 'direct', {durable: true}).catch(console.error);
+  await ch.assertQueue(q, {durable: true});
+  await ch.bindQueue(q, exch, rkey);
+  await ch.publish(exch, rkey, Buffer.from(msg));
+  setTimeout( function()  {
+      ch.close();
+      conn.close();},  500 );
+}
+
+async function do_consume() {
+  var conn = await amqplib.connect(amqp_url, "heartbeat=60");
+  var ch = await conn.createChannel()
+  var q = 'test_queue';
+  await conn.createChannel();
+  await ch.assertQueue(q, {durable: true});
+  await ch.consume(q, function (msg) {
+      console.log(msg.content);
+      ch.ack(msg);
+      ch.cancel('myconsumer');
+      }, {consumerTag: 'myconsumer'});
+  setTimeout( function()  {
+      ch.close();
+      conn.close();},  500 );
+}
 
 const port = process.env.PORT || 8080;
 
@@ -242,74 +278,3 @@ app.listen(port, () => {
   console.log("Server is Running and Healthy on port " + port);
 });
 
-
-
-const {CloudTasksClient} = require('@google-cloud/tasks');
-
-const Gcpclient = new CloudTasksClient();
-
-async function createTask(data) {
-  console.log("in createTask");
-  const project = 'finalproject-334519';
-  const queue = 'fse';
-  const location = 'us-central1';
-  const keyFilename = 'finalproject-334519-fd300744a52b.json'
-  const payload = data;
-  inSeconds = 0;
-
-  const parent = Gcpclient.queuePath(project, location, queue);
-
-  const task = {
-    appEngineHttpRequest: {
-      httpMethod: 'POST',
-      relativeUri: '/log_payload',
-    },
-  };
-
-  if (payload) {
-    task.appEngineHttpRequest.body = Buffer.from(payload).toString('base64');
-  }
-
-  if (inSeconds) {
-    task.scheduleTime = {
-      seconds: inSeconds + Date.now() / 1000,
-    };
-  }
-
-  console.log('Sending task:');
-  console.log(task);
-  const request = {parent: parent, task: task};
-  const [response] = await Gcpclient.createTask(request);
-  const name = response.name;
-  console.log(`Created task ${name}`);
-  return name;
-}
-
-async function purgueQueue(queue_name){
-  const project = "finalproject-334519";
-  const region = "us-central1"
-  const queue = "fse"
-  const name = queue_name
-
-  const request = {
-    name,
-  };
-  const response = await Gcpclient.getTask(request);
-  console.log(response);
-}
-
-// async function listQueues() {
-//   const parent = Gcpclient.locationPath(project, location);
-
-//   // list all fo the queues
-//   const [queues] = await Gcpclient.listQueues({parent});
-
-//   if (queues.length > 0) {
-//     console.log('Queues:');
-//     queues.forEach(queue => {
-//       console.log(`  ${queue.name}`);
-//     });
-//   } else {
-//     console.log('No queues found!');
-//   }
-// }
