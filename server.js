@@ -8,6 +8,8 @@ const validator = require("email-validator");
 const promBundle = require("express-prom-bundle");
 const amqplib = require('amqplib');
 var amqp_url = 'amqps://uuyyktdj:SMNgxmbLqcxiE2owMbWoykgtZ8t9a9af@albatross.rmq.cloudamqp.com/uuyyktdj';
+var word = 'initial';
+var word2 = 'initial';
 
 const app = express();
 
@@ -210,7 +212,12 @@ app.post("/addHistory", (req, res) => {
         console.log(tempArr);
         const payload = {username: req.body.history, history: tempArr};
         console.log("push into the queue");
-        //produce(payload);
+
+        produce(payload.toString());
+        let response = do_consume(payload);
+        let userName = response[1];
+        let tempAr = response[2];
+
         userHistoryModel.updateOne(
           { username: req.body.username },
           { history: tempArr },
@@ -218,6 +225,7 @@ app.post("/addHistory", (req, res) => {
             console.log(doc);
           }
         );
+
         res.send("History Updated");
       })
       .catch((err) => {
@@ -264,11 +272,16 @@ app.get("/metrics", (req, res) => {
 
 app.get("/putIntoQueue", (req,res) => {
   console.log("pull from the queue");
-  produce("Hello hi bye bye");
-  do_consume();
-  //createTask("Hello ra");
+  produce("username: req.body.history, history: tempArr");
+  name();
   res.send("done consuming");
 });
+
+async function name(){
+  await do_consume().catch(console.error);
+  console.log(word);
+  console.log(word2);
+}
 
 async function produce(message){
   console.log("Publishing");
@@ -294,18 +307,26 @@ async function do_consume() {
   await conn.createChannel();
   await ch.assertQueue(q, {durable: true});
   await ch.consume(q, function (msg) {
-      console.log(msg.content);
+    console.log(msg.content.toString())
+      let payload = msg.content.toString();
+      const myArray = msg.content.toString().split(' ');
+      word = myArray[1];
+      word2 = myArray[3];
+      console.log("1",word);
+      console.log("2",word2);
       ch.ack(msg);
       ch.cancel('myconsumer');
+      return myArray;
       }, {consumerTag: 'myconsumer'});
+  console.log("executing");
   setTimeout( function()  {
       ch.close();
       conn.close();},  500 );
 }
+
 
 const port = process.env.PORT || 8080;
 
 app.listen(port, () => {
   console.log("Server is Running and Healthy on port " + port);
 });
-
